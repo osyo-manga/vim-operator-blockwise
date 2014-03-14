@@ -148,6 +148,9 @@ function! operator#blockwise#operator(operator)
 		return
 	endif
 	let result = s:operator_blockwise(a:operator, motion)
+	call cursor(result[1][1], result[1][2])
+	PP! result
+	return result
 endfunction
 
 
