@@ -111,6 +111,7 @@ function! s:blockwise_yank(motion, ...)
 	let g:operator#blockwise#yank = ""
 	let result = s:blockwise(a:motion, "j:let g:operator#blockwise#yank .= @* . \"\\n\"\<CR>", operator)
 	call setreg('"', g:operator#blockwise#yank, "b")
+	call setreg('0', g:operator#blockwise#yank, "b")
 	call setreg('*', g:operator#blockwise#yank, "b")
 	normal! :
 	return result
