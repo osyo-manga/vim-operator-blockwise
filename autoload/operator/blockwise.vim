@@ -89,8 +89,7 @@ function! s:blockwise(textobj, key, operator)
 			let col = col(".")
 " 			echom a:operator . a:textobj
 			execute "normal" a:operator . a:textobj
-" 			execute "normal \<Plug>(operator-surround-append-input-in-advance)'ib"
-			execute "normal!" a:key
+			execute "normal" a:key
 			call cursor(line("."), col)
 			
 			let region = s:region(textobj)
@@ -105,12 +104,20 @@ function! s:blockwise(textobj, key, operator)
 endfunction
 
 
+
+nnoremap <silent> <Plug>(operator-blockwise-save-register)
+	\ :let g:operator#blockwise#yank .= @" . "\n"<CR>
+
+nnoremap <silent> <Plug>(operator-blockwise-j) j
+
+
 function! s:blockwise_yank(motion, ...)
 	let operator = get(a:, 1, "y")
 	let g:yank = ""
 	let g:operator#blockwise#yank = ""
-	let result = s:blockwise(a:motion, "j:let g:operator#blockwise#yank .= @\" . \"\\n\"\<CR>", operator)
 	let register = v:register == "" ? '"' : v:register
+	let result = s:blockwise(a:motion, "\<Plug>(operator-blockwise-j)\<Plug>(operator-blockwise-save-register)", operator)
+" 	let result = s:blockwise(a:motion, "j:let g:operator#blockwise#yank .= @\" . \"\\n\"\<CR>", operator)
 	call setreg(register, g:operator#blockwise#yank, "b")
 	return result
 endfunction
