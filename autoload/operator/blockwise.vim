@@ -54,7 +54,6 @@ function! s:input_motion()
 	let motion = ""
 	while 1
 		redraw
-		echo motion
 		let char = s:getchar()
 		let motion .= char
 		if char == "\<Esc>"
@@ -68,10 +67,15 @@ function! s:input_motion()
 endfunction
 
 
+function! s:through(...)
+	return 1
+endfunction
 
-function! s:blockwise(textobj, key, operator)
+
+function! s:blockwise(textobj, key, operator, ...)
 	let cnt = v:count > 0 ? v:count : ''
 	let textobj = cnt . a:textobj
+	let Comp = get(a:, 1, function("s:through"))
 
 	let region = s:region(textobj)
 	if empty(region)
@@ -81,13 +85,12 @@ function! s:blockwise(textobj, key, operator)
 	let pos = getpos(".")
 	try
 		while !empty(region)
-\		   && region[1][1] >= topleft[1]
 \		   && len(getline("."))
-" \		   && region[1][1] == bottomright[1]
-" 			echom getline(".")
+\		   && region[1][1] >= topleft[1]
+\		   && Comp(region, topleft, bottomright)
 			let bottomright = region[1]
 			let col = col(".")
-" 			echom a:operator . a:textobj
+
 			execute "normal" a:operator . a:textobj
 			silent execute "normal!" a:key
 			call cursor(line("."), col)
@@ -107,27 +110,23 @@ endfunction
 
 function! s:blockwise_yank(motion, ...)
 	let operator = get(a:, 1, "y")
+	let Comp = get(a:, 2, function("s:through"))
 	let g:yank = ""
 	let g:operator#blockwise#yank = ""
 	let register = v:register == "" ? '"' : v:register
-	let result = s:blockwise(a:motion, "j:let g:operator#blockwise#yank .= @\" . \"\\n\"\<CR>", operator)
+	let result = s:blockwise(a:motion, "j:let g:operator#blockwise#yank .= @\" . \"\\n\"\<CR>", operator, Comp)
 	call setreg(register, g:operator#blockwise#yank, "b")
 	return result
 endfunction
-"
-"
-" function! s:blockwise_delete(motion)
-" 	return s:blockwise_yank(a:motion, "d")
-" endfunction
 
 
-function! s:operator_blockwise(operator, motion)
+function! s:operator_blockwise(operator, motion, comp)
 	if a:operator ==# "y"
-		return s:blockwise_yank(a:motion, "y")
+		return s:blockwise_yank(a:motion, "y", a:comp)
 	elseif a:operator ==# "d"
-		return s:blockwise_yank(a:motion, "d")
+		return s:blockwise_yank(a:motion, "d", a:comp)
 	elseif a:operator ==# "c"
-		let result = s:blockwise_yank(a:motion, "d")
+		let result = s:blockwise_yank(a:motion, "d", a:comp)
 		if type(result) == type(0)
 			return result
 		endif
@@ -135,26 +134,48 @@ function! s:operator_blockwise(operator, motion)
 		call feedkeys("\<C-v>" . size . "jI")
 		return result
 	else
-		return s:blockwise(a:motion, "j", a:operator)
+		return s:blockwise(a:motion, "j", a:operator, a:comp)
 	endif
 endfunction
 
 
-function! operator#blockwise#operator(operator)
+function! operator#blockwise#operator(operator, ...)
 	let motion = s:input_motion()
 	if motion == ""
 		return
 	endif
-	let result = s:operator_blockwise(a:operator, motion)
+	let Comp = get(a:, 1, function("s:through"))
+	let result = s:operator_blockwise(a:operator, motion, Comp)
 	call cursor(result[1][1], result[1][2])
 	return result
 endfunction
 
 
-function! operator#blockwise#mapexpr(operator)
+function! operator#blockwise#mapexpr(operator, ...)
 " 	return ":call operator#blockwise#operator(" . string(a:operator) . ")\<CR>"
 	let g:operator#blockwise#operator = a:operator
-	return ":call operator#blockwise#operator(g:operator#blockwise#operator)\<CR>"
+	let g:OperatorBlockwiseCompFunc = get(a:, 1, function("s:through"))
+	return ":\<C-u>call operator#blockwise#operator(g:operator#blockwise#operator, g:OperatorBlockwiseCompFunc)\<CR>"
+endfunction
+
+
+function! s:head_match(region, topleft, bottomright)
+	return a:region[0][1] == a:topleft[1]
+endfunction
+
+
+function! operator#blockwise#mapexpr_head(operator, ...)
+	return operator#blockwise#mapexpr(a:operator, function("s:head_match"))
+endfunction
+
+
+function! s:tail_match(region, topleft, bottomright)
+	return a:region[1][1] == a:bottomright[1]
+endfunction
+
+
+function! operator#blockwise#mapexpr_tail(operator, ...)
+	return operator#blockwise#mapexpr(a:operator, function("s:tail_match"))
 endfunction
 
 
