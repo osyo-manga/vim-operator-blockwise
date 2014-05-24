@@ -1,0 +1,140 @@
+*operator-blockwise.txt*	矩形の範囲を対象とする operator
+
+
+==============================================================================
+概要						*operator-blockwise-introduction*
+
+*operator-blockwise* は下方の行に向かって入力した {motion} がマッチしなくなる
+までの範囲を対象として操作を行うためのプラグインです。
+
+
+==============================================================================
+範囲例						*operator-blockwise-example*
+	| : カーソル位置
+
+	" <Plug>(operator-blockwise-yank)i( した場合
+	" 下の行に向かって iw にマッチするオブジェクトがヤンクされる
+	" 下のようなテキストの場合は
+	" homu
+	" mamimami
+	" an
+	" mado
+	" が矩形選択されます
+	(h|omu)
+	(mamimami)
+	(an)
+	(mado)
+		" この行でマッチしなくなる
+	(saya)	" この行は対象にならない
+
+------------------------------------------------------------------------------
+設定例					*operator-blockwise-example-setting*
+
+Example: >
+	" ヤンク
+	nmap YY <Plug>(operator-blockwise-yank-head)
+	" 削除
+	nmap DD <Plug>(operator-blockwise-delete-head)
+	" 変更
+	nmap CC <Plug>(operator-blockwise-change-head)
+<
+
+==============================================================================
+インターフェース				*operator-blockwise-interface*
+
+------------------------------------------------------------------------------
+マッピング					*operator-blockwise-mapping*
+
+					*<Plug>(operator-blockwise-yank)*
+<Plug>(operator-blockwise-yank){motion}
+	カーソル位置から下の行に向かって {motion} にマッチしないまでの矩形の
+	範囲をヤンクします。
+
+					*<Plug>(operator-blockwise-yank-head)*
+<Plug>(operator-blockwise-yank-head){motion}
+	|<Plug>(operator-blockwise-yank)| と同等ですが、先頭列が同じオブジェクト
+	のみマッチします。
+Example: >
+	"<Plug>(operator-blockwise-yank-head)i( した場合
+	" homu mamimami までがヤンクされる
+	(hom|u)
+	(mamimami)
+	  (mado)	" i( 時の先頭列が違うためマッチしない
+<
+					*<Plug>(operator-blockwise-yank-tail)*
+<Plug>(operator-blockwise-yank-head){motion}
+	|<Plug>(operator-blockwise-yank)| と同等ですが、末尾列が同じオブジェクト
+	のみマッチします。
+
+					*<Plug>(operator-blockwise-delete)*
+<Plug>(operator-blockwise-delete){motion}
+	カーソル位置から下の行に向かって {motion} にマッチしないまでの矩形の
+	範囲を削除します。
+
+					*<Plug>(operator-blockwise-delete-head)*
+<Plug>(operator-blockwise-delete-head){motion}
+	|<Plug>(operator-blockwise-delete)| と同等ですが、先頭列が同じオブジェクト
+	のみマッチします。
+Example: >
+	"<Plug>(operator-blockwise-delete-head)i( した場合
+	" homu mamimami までが削除される
+	(hom|u)
+	(mamimami)
+	  (mado)	" i( 時の先頭列が違うためマッチしない
+<
+					*<Plug>(operator-blockwise-delete-tail)*
+<Plug>(operator-blockwise-delete-head){motion}
+	|<Plug>(operator-blockwise-delete)| と同等ですが、末尾列が同じオブジェクト
+	のみマッチします。
+
+					*<Plug>(operator-blockwise-change)*
+<Plug>(operator-blockwise-change){motion}
+	カーソル位置から下の行に向かって {motion} にマッチしないまでの矩形の
+	範囲を削除して挿入モードに入ります。
+	テキストを入力して挿入モードから抜けると入力したテキストが削除した範
+	囲に挿入されます。
+
+					*<Plug>(operator-blockwise-change-head)*
+<Plug>(operator-blockwise-change-head){motion}
+	|<Plug>(operator-blockwise-change)| と同等ですが、先頭列が同じオブジェクト
+	のみマッチします。
+Example: >
+	"<Plug>(operator-blockwise-change-head)i( した場合
+	" homu mamimami までが変更される
+	(hom|u)
+	(mamimami)
+	  (mado)	" i( 時の先頭列が違うためマッチしない
+<
+					*<Plug>(operator-blockwise-change-tail)*
+<Plug>(operator-blockwise-change-head){motion}
+	|<Plug>(operator-blockwise-change)| と同等ですが、末尾列が同じオブジェクト
+	のみマッチします。
+
+
+------------------------------------------------------------------------------
+関数						*operator-blockwise-functions*
+
+operator#blockwise#mapexpr({operator})		*operator#blockwise#mapexpr()*
+	|<Plug>(operator-blockwise-yank)| と同様に任意の {operator}
+	を各オブジェクトに対して適用します。
+	この関数あh |:map-<expr>| を使用してマッピングを行います。
+Example: >
+	" operator-replace
+	" https://github.com/kana/vim-operator-replace
+	nmap <expr> SS operator#blockwise#mapexpr_head("\<Plug>(operator-replace)")
+<
+					*operator#blockwise#mapexpr_head()*
+operator#blockwise#mapexpr_head({operator})	
+	使い方は|operator#blockwise#mapexpr()| と同様です。
+	|<Plug>(operator-blockwise-yank-head)|と同じようにオブジェクトの先頭列が
+	同じ場合のみマッチます。
+
+					*operator#blockwise#mapexpr_tail()*
+operator#blockwise#mapexpr_tail({operator})	
+	使い方は|operator#blockwise#mapexpr()| と同様です。
+	|<Plug>(operator-blockwise-yank-tail)|と同じようにオブジェクトの末尾列が
+	同じ場合のみマッチます。
+
+
+==============================================================================
+vim:tw=78:fo=tcq2mM:ts=8:ft=help:norl
