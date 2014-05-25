@@ -144,7 +144,7 @@ function! s:blockwise(textobj, key, operator, ...)
 	endif
 	let [topleft, bottomright] = region
 	let pos = getpos(".")
-	PP! pos
+
 	try
 		while !empty(region)
 \		   && len(getline("."))
@@ -192,6 +192,7 @@ function! s:operator_blockwise(operator, motion, comp)
 			return result
 		endif
 		let size = result[2][1] - result[1][1]
+		call cursor(result[1][1], result[1][2])
 		if strdisplaywidth(getline(".")) == col(".")
 			call feedkeys("\<C-v>" . size . "jA", "n")
 		else
