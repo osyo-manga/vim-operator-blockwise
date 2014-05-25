@@ -39,8 +39,69 @@ function! s:mapcheck_once(name, ...)
 	return len(filter(split(map, "\n"), 'v:val =~ pat')) == 1
 endfunction
 
+
+
+" a <= b
+function! s:pos_less_equal(a, b)
+	return a:a[0] == a:b[0] ? a:a[1] <= a:b[1] : a:a[0] <= a:b[0]
+endfunction
+
+
+function! s:as_config(config)
+	let default = {
+\		"textobj" : "",
+\		"is_cursor_in" : 0,
+\		"noremap" : 0,
+\	}
+	let config
+\		= type(a:config) == type("") ? { "textobj" : a:config }
+\		: type(a:config) == type({}) ? a:config
+\		: {}
+	return extend(default, config)
+endfunction
+
+
+let s:region = []
+let s:wise = ""
+function! operator#blockwise#region_operator(wise)
+	let reg_save = @@
+	let s:wise = a:wise
+	let s:region = [getpos("'[")[1:], getpos("']")[1:]]
+	let @@ = reg_save
+endfunction
+
+nnoremap <silent> <Plug>(operator-blockwise-region-operator)
+\	:<C-u>set operatorfunc=operator#blockwise#region_operator<CR>g@
+
+
+function! operator#blockwise#region_from_textobj(textobj)
+	let s:region = []
+	let config = s:as_config(a:textobj)
+
+	let pos = getpos(".")
+	try
+		silent execute (config.noremap ? 'onoremap' : 'omap') '<expr>'
+\			'<Plug>(operator-blockwise-target)' string(config.textobj)
+
+		let tmp = &operatorfunc
+		silent execute "normal \<Plug>(operator-blockwise-region-operator)\<Plug>(operator-blockwise-target)"
+		let &operatorfunc = tmp
+
+		if !empty(s:region) && !s:pos_less_equal(s:region[0], s:region[1])
+			return ["", []]
+		endif
+		if !empty(s:region) && config.is_cursor_in && (s:pos_less(pos[1:], s:region[0]) || s:pos_less(s:region[1], pos[1:]))
+			return ["", []]
+		endif
+		return deepcopy([s:wise, s:region])
+	finally
+		call setpos(".", pos)
+	endtry
+endfunction
+
+
 function! s:has_motion(name)
-	return s:mapcheck_once(a:name, "o") || !empty(textobj#multitextobj#region_from_textobj(a:name)[1])
+	return s:mapcheck_once(a:name, "o") || !empty(operator#blockwise#region_from_textobj(a:name)[1])
 endfunction
 
 
