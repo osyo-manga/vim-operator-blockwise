@@ -144,6 +144,7 @@ function! s:blockwise(textobj, key, operator, ...)
 	endif
 	let [topleft, bottomright] = region
 	let pos = getpos(".")
+	PP! pos
 	try
 		while !empty(region)
 \		   && len(getline("."))
@@ -166,7 +167,6 @@ function! s:blockwise(textobj, key, operator, ...)
 	endtry
 	return ["\<C-v>", s:as_cursorpos(topleft), s:as_cursorpos(bottomright)]
 endfunction
-
 
 
 function! s:blockwise_yank(motion, ...)
@@ -192,7 +192,11 @@ function! s:operator_blockwise(operator, motion, comp)
 			return result
 		endif
 		let size = result[2][1] - result[1][1]
-		call feedkeys("\<C-v>" . size . "jI")
+		if strdisplaywidth(getline(".")) == col(".")
+			call feedkeys("\<C-v>" . size . "jA", "n")
+		else
+			call feedkeys("\<C-v>" . size . "jI", "n")
+		endif
 		return result
 	else
 		return s:blockwise(a:motion, "j", a:operator, a:comp)
