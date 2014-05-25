@@ -193,11 +193,18 @@ function! s:operator_blockwise(operator, motion, comp)
 		endif
 		let size = result[2][1] - result[1][1]
 		call cursor(result[1][1], result[1][2])
-		if strdisplaywidth(getline(".")) == col(".")
-			call feedkeys("\<C-v>" . size . "jA", "n")
-		else
-			call feedkeys("\<C-v>" . size . "jI", "n")
+
+		let key = ""
+		if result[1][1] != result[2][1]
+			let key = size . "j"
 		endif
+		if strdisplaywidth(getline(".")) == col(".")
+			let key .= "A"
+		else
+			let key .= "I"
+		endif
+		" e.g. call feedkeys("\<C-v>" . size . "jI", "n")
+		call feedkeys("\<C-v>" . key, "n")
 		return result
 	else
 		return s:blockwise(a:motion, "j", a:operator, a:comp)
